@@ -1,50 +1,66 @@
-const STORAGE_KEY = "voiceNavigatorEnabled";
-const TRANSCRIPT_KEY = "voiceNavigatorTranscript";
-const STATUS_KEY = "voiceNavigatorStatus";
+const STORAGE_ENABLED = "voiceNavigatorEnabled";
+const STORAGE_DICTATION = "voiceNavigatorDictation";
+const STORAGE_STATUS = "voiceNavigatorStatus";
+const STORAGE_TRANSCRIPT = "voiceNavigatorTranscript";
 const LISTENER_URL = chrome.runtime.getURL("listener.html");
-let listenerWindowId = null;
+
+let listenerTabId = null;
 
 async function setEnabled(enabled) {
-  await chrome.storage.local.set({ [STORAGE_KEY]: enabled });
-  await chrome.storage.local.set({ [STATUS_KEY]: enabled ? "listening" : "stopped" });
+  await chrome.storage.local.set({ [STORAGE_ENABLED]: enabled });
+  await chrome.storage.local.set({ [STORAGE_STATUS]: enabled ? "listening" : "stopped" });
 
   if (enabled) {
-    await ensureListenerWindow();
+    await ensureListenerTab();
     chrome.runtime.sendMessage({ type: "voice-start" });
   } else {
     chrome.runtime.sendMessage({ type: "voice-stop" });
-    await closeListenerWindow();
+    await closeListenerTab();
   }
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
-  const data = await chrome.storage.local.get(STORAGE_KEY);
-  if (data[STORAGE_KEY]) {
-    await ensureListenerWindow();
-    chrome.runtime.sendMessage({ type: "voice-start" });
-  }
-});
+async function setDictation(enabled) {
+  await chrome.storage.local.set({ [STORAGE_DICTATION]: enabled });
+}
 
-chrome.runtime.onStartup.addListener(async () => {
-  const data = await chrome.storage.local.get(STORAGE_KEY);
-  if (data[STORAGE_KEY]) {
-    await ensureListenerWindow();
-    chrome.runtime.sendMessage({ type: "voice-start" });
+async function ensureListenerTab() {
+  if (listenerTabId) {
+    return;
   }
-});
 
-chrome.windows.onRemoved.addListener(async (windowId) => {
-  if (listenerWindowId && windowId === listenerWindowId) {
-    listenerWindowId = null;
-    const data = await chrome.storage.local.get(STORAGE_KEY);
-    if (data[STORAGE_KEY]) {
-      await ensureListenerWindow();
-      chrome.runtime.sendMessage({ type: "voice-start" });
+  const existing = await findListenerTab();
+  if (existing) {
+    listenerTabId = existing.id;
+    return;
+  }
+
+  const created = await chrome.tabs.create({
+    url: LISTENER_URL,
+    active: false,
+    pinned: true
+  });
+  listenerTabId = created?.id || null;
+}
+
+async function closeListenerTab() {
+  if (!listenerTabId) {
+    const existing = await findListenerTab();
+    if (existing) {
+      listenerTabId = existing.id;
     }
   }
-});
 
-async function findListenerTab() {
+  if (listenerTabId) {
+    try {
+      await chrome.tabs.remove(listenerTabId);
+    } catch (error) {
+      // Ignore if already closed.
+    }
+  }
+  listenerTabId = null;
+}
+
+function findListenerTab() {
   return new Promise((resolve) => {
     chrome.tabs.query({ url: LISTENER_URL }, (tabs) => {
       resolve(tabs && tabs.length ? tabs[0] : null);
@@ -52,45 +68,35 @@ async function findListenerTab() {
   });
 }
 
-async function ensureListenerWindow() {
-  if (listenerWindowId) {
-    return;
+chrome.runtime.onInstalled.addListener(async () => {
+  const data = await chrome.storage.local.get([STORAGE_ENABLED, STORAGE_DICTATION]);
+  if (data[STORAGE_ENABLED]) {
+    await ensureListenerTab();
+    chrome.runtime.sendMessage({ type: "voice-start" });
   }
-
-  const existingTab = await findListenerTab();
-  if (existingTab) {
-    listenerWindowId = existingTab.windowId;
-    return;
+  if (typeof data[STORAGE_DICTATION] === "undefined") {
+    await chrome.storage.local.set({ [STORAGE_DICTATION]: false });
   }
+});
 
-  const created = await chrome.windows.create({
-    url: LISTENER_URL,
-    type: "popup",
-    focused: false,
-    width: 360,
-    height: 220,
-    state: "minimized"
-  });
-  listenerWindowId = created?.id || null;
-}
+chrome.runtime.onStartup.addListener(async () => {
+  const data = await chrome.storage.local.get(STORAGE_ENABLED);
+  if (data[STORAGE_ENABLED]) {
+    await ensureListenerTab();
+    chrome.runtime.sendMessage({ type: "voice-start" });
+  }
+});
 
-async function closeListenerWindow() {
-  if (!listenerWindowId) {
-    const existingTab = await findListenerTab();
-    if (existingTab) {
-      listenerWindowId = existingTab.windowId;
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  if (listenerTabId && tabId === listenerTabId) {
+    listenerTabId = null;
+    const data = await chrome.storage.local.get(STORAGE_ENABLED);
+    if (data[STORAGE_ENABLED]) {
+      await ensureListenerTab();
+      chrome.runtime.sendMessage({ type: "voice-start" });
     }
   }
-
-  if (listenerWindowId) {
-    try {
-      await chrome.windows.remove(listenerWindowId);
-    } catch (error) {
-      // Ignore failures for already-closed windows.
-    }
-  }
-  listenerWindowId = null;
-}
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.type) {
@@ -103,38 +109,67 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "toggle-dictation") {
+    setDictation(Boolean(message.enabled));
+    sendResponse({ ok: true });
+    return true;
+  }
+
   if (message.type === "request-status") {
-    chrome.storage.local.get([STORAGE_KEY, TRANSCRIPT_KEY, STATUS_KEY], (data) => {
-      sendResponse({
-        enabled: Boolean(data[STORAGE_KEY]),
-        transcript: data[TRANSCRIPT_KEY] || "",
-        status: data[STATUS_KEY] || "stopped"
-      });
-    });
+    chrome.storage.local.get(
+      [STORAGE_ENABLED, STORAGE_DICTATION, STORAGE_TRANSCRIPT, STORAGE_STATUS],
+      (data) => {
+        sendResponse({
+          enabled: Boolean(data[STORAGE_ENABLED]),
+          dictation: Boolean(data[STORAGE_DICTATION]),
+          transcript: data[STORAGE_TRANSCRIPT] || "",
+          status: data[STORAGE_STATUS] || "stopped"
+        });
+      }
+    );
     return true;
   }
 
   if (message.type === "voice-transcript") {
-    chrome.storage.local.set({ [TRANSCRIPT_KEY]: message.transcript || "" });
+    chrome.storage.local.set({ [STORAGE_TRANSCRIPT]: message.transcript || "" });
     chrome.runtime.sendMessage({ type: "ui-transcript", transcript: message.transcript || "" });
   }
 
   if (message.type === "voice-status") {
-    chrome.storage.local.set({ [STATUS_KEY]: message.status || "stopped" });
+    chrome.storage.local.set({ [STORAGE_STATUS]: message.status || "stopped" });
     chrome.runtime.sendMessage({ type: "ui-status", status: message.status || "stopped" });
   }
 
   if (message.type === "voice-command") {
-    handleCommand(message.command || "");
+    handleVoiceInput(message.command || "");
   }
 });
 
-function handleCommand(rawText) {
+async function handleVoiceInput(rawText) {
   const text = rawText.toLowerCase().trim();
   if (!text) {
     return;
   }
 
+  const data = await chrome.storage.local.get(STORAGE_DICTATION);
+  const dictationOn = Boolean(data[STORAGE_DICTATION]);
+
+  if (dictationOn && !(await tryDictation(rawText))) {
+    handleCommand(text, rawText);
+    return;
+  }
+
+  if (!dictationOn) {
+    handleCommand(text, rawText);
+  }
+}
+
+async function tryDictation(rawText) {
+  const result = await runInActiveTab(insertTextAtCursor, [rawText]);
+  return Boolean(result);
+}
+
+function handleCommand(text, rawText) {
   if (text.includes("scroll to top")) {
     runInActiveTab(scrollToEdge, ["top"]);
     return;
@@ -214,7 +249,8 @@ function handleCommand(rawText) {
   if (openMatch) {
     const query = openMatch[1].trim();
     openQuery(query);
-    return;
+  } else {
+    chrome.runtime.sendMessage({ type: "ui-status", status: `unknown:${rawText}` });
   }
 }
 
@@ -240,15 +276,27 @@ function openQuery(query) {
 }
 
 function runInActiveTab(func, args) {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (!tabs.length) {
-      return;
-    }
+  return new Promise((resolve) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs.length) {
+        resolve(false);
+        return;
+      }
 
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      func,
-      args
+      chrome.scripting.executeScript(
+        {
+          target: { tabId: tabs[0].id },
+          func,
+          args
+        },
+        (results) => {
+          if (chrome.runtime.lastError) {
+            resolve(false);
+            return;
+          }
+          resolve(results && results[0] ? results[0].result : false);
+        }
+      );
     });
   });
 }
@@ -268,7 +316,6 @@ function switchTabByOffset(offset) {
 function switchToTabIndex(index) {
   chrome.tabs.query({ currentWindow: true }, (tabs) => {
     if (index < 0 || index >= tabs.length) {
-      chrome.tabs.update(tabs[0].id, { active: true });
       return;
     }
 
@@ -391,4 +438,45 @@ function clickLinkByIndex(index) {
     target.focus();
     target.click();
   }
+}
+
+function insertTextAtCursor(text) {
+  const active = document.activeElement;
+  if (!active) {
+    return false;
+  }
+
+  const tag = active.tagName ? active.tagName.toLowerCase() : "";
+  const isEditable = active.isContentEditable;
+  const isInput = tag === "input" || tag === "textarea";
+
+  if (!isEditable && !isInput) {
+    return false;
+  }
+
+  const cleaned = text.trim();
+  if (!cleaned) {
+    return false;
+  }
+
+  if (isInput) {
+    const start = active.selectionStart ?? active.value.length;
+    const end = active.selectionEnd ?? active.value.length;
+    active.setRangeText(`${cleaned} `, start, end, "end");
+    active.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
+  }
+
+  if (isEditable) {
+    const selection = window.getSelection();
+    if (!selection) {
+      return false;
+    }
+    selection.deleteFromDocument();
+    selection.getRangeAt(0).insertNode(document.createTextNode(`${cleaned} `));
+    selection.collapseToEnd();
+    return true;
+  }
+
+  return false;
 }

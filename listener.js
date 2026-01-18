@@ -63,26 +63,11 @@ function initRecognition() {
   };
 }
 
-async function ensureMicAccess() {
-  try {
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-    return true;
-  } catch (error) {
-    notifyStatus(`error:${error.name || "mic denied"}`);
-    return false;
-  }
-}
-
-async function startListening() {
+function startListening() {
   if (!recognition) {
     initRecognition();
   }
   if (!recognition || isListening) {
-    return;
-  }
-
-  const allowed = await ensureMicAccess();
-  if (!allowed) {
     return;
   }
 

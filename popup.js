@@ -3,6 +3,7 @@ const statusTitle = document.getElementById("statusTitle");
 const statusSubtitle = document.getElementById("statusSubtitle");
 const transcriptText = document.getElementById("transcriptText");
 const alwaysToggle = document.getElementById("alwaysToggle");
+const dictationToggle = document.getElementById("dictationToggle");
 
 function setStatus(status) {
   if (status === "listening") {
@@ -29,6 +30,14 @@ function setStatus(status) {
     return;
   }
 
+  if (status && status.startsWith("unknown:")) {
+    statusDot.style.background = "var(--danger)";
+    statusDot.style.boxShadow = "0 0 0 4px rgba(244, 63, 94, 0.2)";
+    statusTitle.textContent = "Unknown command";
+    statusSubtitle.textContent = status.replace("unknown:", "");
+    return;
+  }
+
   statusDot.style.background = "var(--danger)";
   statusDot.style.boxShadow = "0 0 0 4px rgba(244, 63, 94, 0.2)";
   statusTitle.textContent = "Mic off";
@@ -45,6 +54,7 @@ function requestStatus() {
       return;
     }
     alwaysToggle.checked = Boolean(response.enabled);
+    dictationToggle.checked = Boolean(response.dictation);
     updateTranscript(response.transcript || "");
     setStatus(response.status || "stopped");
   });
@@ -53,6 +63,10 @@ function requestStatus() {
 alwaysToggle.addEventListener("change", () => {
   chrome.runtime.sendMessage({ type: "toggle-voice", enabled: alwaysToggle.checked });
   setStatus(alwaysToggle.checked ? "listening" : "stopped");
+});
+
+dictationToggle.addEventListener("change", () => {
+  chrome.runtime.sendMessage({ type: "toggle-dictation", enabled: dictationToggle.checked });
 });
 
 chrome.runtime.onMessage.addListener((message) => {
