@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice Command Navigator Listener</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        background: #0b1220;
+        color: #f8fafc;
+        display: grid;
+        place-items: center;
+        height: 100vh;
+      }
+      .card {
+        padding: 16px 18px;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        text-align: center;
+        width: 260px;
+      }
+      .status {
+        font-size: 14px;
+        margin-top: 8px;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div>Voice Command Navigator</div>
+      <div class="status" id="listenerStatus">Listening…</div>
+    </div>
+    <script src="listener.js"></script>
+  </body>
+</html>

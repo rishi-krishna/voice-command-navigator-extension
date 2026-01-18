@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice Command Navigator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="glow"></div>
+    <header class="hero">
+      <nav>
+        <span class="brand">Voice Command Navigator</span>
+        <span class="tag">Chrome Extension</span>
+      </nav>
+      <div class="hero__content">
+        <h1>Navigate the web by voice.</h1>
+        <p>
+          Control tabs, scroll pages, and click links with simple voice commands. Built for
+          accessibility, multitasking, and hands-free browsing.
+        </p>
+        <div class="hero__actions">
+          <a class="cta" href="#install">Get the extension</a>
+          <a class="ghost" href="#commands">View commands</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="panel" id="commands">
+      <h2>Command examples</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Tabs</h3>
+          <p>"next tab", "previous tab", "switch tab 3", "close tab"</p>
+        </div>
+        <div class="card">
+          <h3>Scrolling</h3>
+          <p>"scroll down", "scroll up", "scroll to top", "scroll to bottom"</p>
+        </div>
+        <div class="card">
+          <h3>Links</h3>
+          <p>"show links" then "click link 5"</p>
+        </div>
+        <div class="card">
+          <h3>Open sites</h3>
+          <p>"open youtube" (opens or searches)</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="install">
+      <h2>Install (developer mode)</h2>
+      <ol>
+        <li>Open <strong>chrome://extensions</strong> in Chrome.</li>
+        <li>Enable <strong>Developer mode</strong>.</li>
+        <li>Click <strong>Load unpacked</strong> and select the extension folder.</li>
+        <li>Open the extension and toggle <strong>Always-on voice</strong> (a small listener window opens).</li>
+      </ol>
+      <p class="note">This project is built for GitHub Pages. Put this <code>docs/</code> folder on the <code>gh-pages</code> branch or enable Pages from <code>docs/</code>.</p>
+    </section>
+  </body>
+</html>

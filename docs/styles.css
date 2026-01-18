@@ -1,0 +1,148 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Playfair+Display:wght@600&display=swap");
+
+:root {
+  --bg: #0b1220;
+  --panel: #121a2a;
+  --accent: #f97316;
+  --accent2: #22c55e;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top, #1f2937, #0b1220 65%);
+  min-height: 100vh;
+}
+
+.glow {
+  position: fixed;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.35), transparent 70%);
+  top: -120px;
+  right: -120px;
+  filter: blur(20px);
+  z-index: -1;
+}
+
+.hero {
+  padding: 48px 12vw 32px;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tag {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.hero__content {
+  margin-top: 52px;
+  max-width: 640px;
+}
+
+h1 {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(36px, 5vw, 56px);
+  margin: 0 0 16px;
+}
+
+p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.hero__actions {
+  margin-top: 28px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cta,
+.ghost {
+  text-decoration: none;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.cta {
+  background: linear-gradient(135deg, var(--accent), #fb923c);
+  color: #1f1204;
+}
+
+.ghost {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: var(--text);
+}
+
+.panel {
+  margin: 24px 12vw;
+  background: var(--panel);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.panel h2 {
+  margin-top: 0;
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.card {
+  background: rgba(15, 23, 42, 0.7);
+  padding: 16px;
+  border-radius: 16px;
+}
+
+ol {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.note {
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+code {
+  font-family: "Space Grotesk", "Consolas", monospace;
+  color: var(--accent2);
+}
+
+@media (max-width: 720px) {
+  .hero,
+  .panel {
+    margin: 0;
+    padding: 28px 20px;
+  }
+
+  .panel {
+    margin: 16px 16px 24px;
+  }
+}

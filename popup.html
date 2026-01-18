@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice Command Navigator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <header class="panel__header">
+        <div class="logo">VCN</div>
+        <div>
+          <h1>Voice Command Navigator</h1>
+          <p>Hands-free browsing for tabs, scroll, and links.</p>
+        </div>
+      </header>
+
+      <section class="status">
+        <div class="status__indicator" id="statusDot"></div>
+        <div>
+          <div class="status__title" id="statusTitle">Mic off</div>
+          <div class="status__subtitle" id="statusSubtitle">Toggle always-on to start listening.</div>
+        </div>
+      </section>
+
+      <section class="toggle-row">
+        <div>
+          <div class="toggle-row__title">Always-on voice</div>
+          <div class="toggle-row__subtitle">Keep listening across every tab.</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="alwaysToggle" />
+          <span class="slider"></span>
+        </label>
+      </section>
+
+      <section class="transcript">
+        <div class="transcript__label">Heard</div>
+        <div class="transcript__text" id="transcriptText">Waiting for your voice...</div>
+      </section>
+
+      <section class="commands">
+        <div class="commands__title">Try saying</div>
+        <ul>
+          <li>"scroll down" or "scroll up"</li>
+          <li>"scroll to top" or "scroll to bottom"</li>
+          <li>"show links" then "click link 3"</li>
+          <li>"next tab" or "previous tab"</li>
+          <li>"close tab" or "open new tab"</li>
+          <li>"open youtube" (searches or opens a site)</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
