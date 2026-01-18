@@ -361,8 +361,8 @@ function scrollToEdge(edge) {
 }
 
 function showLinkHints() {
-  if (window.__voiceNav?.visible) {
-    return;
+  if (window.__voiceNav?.overlay) {
+    window.__voiceNav.overlay.remove();
   }
 
   const overlay = document.createElement("div");
@@ -437,11 +437,26 @@ function clickLinkByIndex(index) {
   if (target) {
     target.focus();
     target.click();
+    if (window.__voiceNav?.overlay) {
+      window.__voiceNav.overlay.remove();
+    }
+    window.__voiceNav = { overlay: null, links: [], visible: false };
   }
 }
 
 function insertTextAtCursor(text) {
-  const active = document.activeElement;
+  const cleaned = text.trim();
+  if (!cleaned) {
+    return false;
+  }
+
+  let active = document.activeElement;
+  if (active === document.body || !active) {
+    active = document.querySelector(
+      "input:focus, textarea:focus, [contenteditable=\"true\"]:focus, [contenteditable=\"\"]:focus"
+    );
+  }
+
   if (!active) {
     return false;
   }
@@ -454,22 +469,30 @@ function insertTextAtCursor(text) {
     return false;
   }
 
-  const cleaned = text.trim();
-  if (!cleaned) {
-    return false;
-  }
-
   if (isInput) {
     const start = active.selectionStart ?? active.value.length;
     const end = active.selectionEnd ?? active.value.length;
-    active.setRangeText(`${cleaned} `, start, end, "end");
+    if (typeof active.setRangeText === "function") {
+      active.setRangeText(`${cleaned} `, start, end, "end");
+    } else {
+      const before = active.value.slice(0, start);
+      const after = active.value.slice(end);
+      active.value = `${before}${cleaned} ${after}`;
+      const cursor = (before + cleaned + " ").length;
+      active.selectionStart = cursor;
+      active.selectionEnd = cursor;
+    }
     active.dispatchEvent(new Event("input", { bubbles: true }));
     return true;
   }
 
   if (isEditable) {
+    if (document.execCommand && document.execCommand("insertText", false, `${cleaned} `)) {
+      return true;
+    }
+
     const selection = window.getSelection();
-    if (!selection) {
+    if (!selection || !selection.rangeCount) {
       return false;
     }
     selection.deleteFromDocument();
