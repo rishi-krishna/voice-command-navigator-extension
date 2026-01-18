@@ -275,6 +275,66 @@ function handleCommand(text, rawText) {
     return;
   }
 
+  if (text.includes("go back")) {
+    goBack();
+    return;
+  }
+
+  if (text.includes("go forward")) {
+    goForward();
+    return;
+  }
+
+  if (text.includes("reopen last closed tab") || text.includes("restore tab")) {
+    restoreLastClosedTab();
+    return;
+  }
+
+  if (text.includes("mute tab")) {
+    setTabMuted(true);
+    return;
+  }
+
+  if (text.includes("unmute tab")) {
+    setTabMuted(false);
+    return;
+  }
+
+  if (text.includes("pause video")) {
+    runInActiveTab(setMediaState, ["pause"]);
+    return;
+  }
+
+  if (text.includes("play video") || text.includes("resume video")) {
+    runInActiveTab(setMediaState, ["play"]);
+    return;
+  }
+
+  if (text.includes("zoom in")) {
+    adjustZoom(0.1);
+    return;
+  }
+
+  if (text.includes("zoom out")) {
+    adjustZoom(-0.1);
+    return;
+  }
+
+  if (text.includes("zoom reset") || text.includes("reset zoom")) {
+    setZoom(1);
+    return;
+  }
+
+  if (text.includes("print page") || text === "print") {
+    runInActiveTab(printPage, []);
+    return;
+  }
+
+  if (text.includes("reader mode")) {
+    toggleReaderMode();
+    return;
+  }
+
   const openMatch = text.match(/open\s+(.+)/);
   if (openMatch) {
     const query = openMatch[1].trim();
@@ -373,6 +433,88 @@ function reloadActiveTab() {
   });
 }
 
+function goBack() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs.length) {
+      return;
+    }
+
+    chrome.tabs.goBack(tabs[0].id);
+  });
+}
+
+function goForward() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs.length) {
+      return;
+    }
+
+    chrome.tabs.goForward(tabs[0].id);
+  });
+}
+
+function restoreLastClosedTab() {
+  chrome.sessions.getRecentlyClosed({ maxResults: 1 }, (sessions) => {
+    if (!sessions || !sessions.length) {
+      chrome.runtime.sendMessage({ type: "ui-status", status: "No recently closed tab." });
+      return;
+    }
+
+    const sessionId = sessions[0].tab?.sessionId || sessions[0].window?.sessionId;
+    if (!sessionId) {
+      chrome.runtime.sendMessage({ type: "ui-status", status: "No recently closed tab." });
+      return;
+    }
+
+    chrome.sessions.restore(sessionId);
+  });
+}
+
+function setTabMuted(muted) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs.length) {
+      return;
+    }
+
+    chrome.tabs.update(tabs[0].id, { muted });
+  });
+}
+
+function adjustZoom(delta) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs.length) {
+      return;
+    }
+
+    chrome.tabs.getZoom(tabs[0].id, (zoom) => {
+      const next = Math.max(0.25, Math.min(5, Number((zoom + delta).toFixed(2))));
+      chrome.tabs.setZoom(tabs[0].id, next);
+    });
+  });
+}
+
+function setZoom(level) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs.length) {
+      return;
+    }
+
+    chrome.tabs.setZoom(tabs[0].id, level);
+  });
+}
+
+function toggleReaderMode() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs.length) {
+      return;
+    }
+
+    if (chrome.tabs.toggleReaderMode) {
+      chrome.tabs.toggleReaderMode(tabs[0].id);
+    }
+  });
+}
+
 function scrollByAmount(direction, amount) {
   let delta = direction === "down" ? 1 : -1;
   if (amount === "page") {
@@ -388,6 +530,30 @@ function scrollByAmount(direction, amount) {
 function scrollToEdge(edge) {
   const top = edge === "top" ? 0 : document.body.scrollHeight;
   window.scrollTo({ top, behavior: "smooth" });
+}
+
+function setMediaState(action) {
+  const media = Array.from(document.querySelectorAll("video, audio"));
+  if (!media.length) {
+    return false;
+  }
+  const active = media.find((item) => !item.paused) || media[0];
+  if (action === "pause") {
+    active.pause();
+    return true;
+  }
+  if (action === "play") {
+    const playPromise = active.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {});
+    }
+    return true;
+  }
+  return false;
+}
+
+function printPage() {
+  window.print();
 }
 
 function showLinkHints() {
