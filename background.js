@@ -439,7 +439,11 @@ function goBack() {
       return;
     }
 
-    chrome.tabs.goBack(tabs[0].id);
+    chrome.tabs.goBack(tabs[0].id, () => {
+      if (chrome.runtime.lastError) {
+        runInActiveTab(historyBack, []);
+      }
+    });
   });
 }
 
@@ -449,7 +453,11 @@ function goForward() {
       return;
     }
 
-    chrome.tabs.goForward(tabs[0].id);
+    chrome.tabs.goForward(tabs[0].id, () => {
+      if (chrome.runtime.lastError) {
+        runInActiveTab(historyForward, []);
+      }
+    });
   });
 }
 
@@ -554,6 +562,14 @@ function setMediaState(action) {
 
 function printPage() {
   window.print();
+}
+
+function historyBack() {
+  window.history.back();
+}
+
+function historyForward() {
+  window.history.forward();
 }
 
 function showLinkHints() {
