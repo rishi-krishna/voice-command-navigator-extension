@@ -15,6 +15,7 @@ Hands-free tab navigation, scrolling, and link clicking with voice commands.
 - "close tab" / "open new tab" / "reload tab"
 - "open youtube" (searches or opens a site)
 - Enable dictation to type into focused input fields
+- "dictation on" / "dictation off"
 
 ## GitHub Pages
 The landing page lives in `docs/`. Enable Pages from the `docs/` directory or publish the folder on a `gh-pages` branch.

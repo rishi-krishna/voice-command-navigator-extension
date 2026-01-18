@@ -38,6 +38,14 @@ function setStatus(status) {
     return;
   }
 
+  if (status === "Dictation on" || status === "Dictation off") {
+    statusDot.style.background = "var(--success)";
+    statusDot.style.boxShadow = "0 0 0 4px rgba(34, 197, 94, 0.2)";
+    statusTitle.textContent = status;
+    statusSubtitle.textContent = "Voice shortcut applied.";
+    return;
+  }
+
   statusDot.style.background = "var(--danger)";
   statusDot.style.boxShadow = "0 0 0 4px rgba(244, 63, 94, 0.2)";
   statusTitle.textContent = "Mic off";

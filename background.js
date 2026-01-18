@@ -151,6 +151,18 @@ async function handleVoiceInput(rawText) {
     return;
   }
 
+  if (matchesDictationOn(text)) {
+    await chrome.storage.local.set({ [STORAGE_DICTATION]: true });
+    chrome.runtime.sendMessage({ type: "ui-status", status: "Dictation on" });
+    return;
+  }
+
+  if (matchesDictationOff(text)) {
+    await chrome.storage.local.set({ [STORAGE_DICTATION]: false });
+    chrome.runtime.sendMessage({ type: "ui-status", status: "Dictation off" });
+    return;
+  }
+
   const data = await chrome.storage.local.get(STORAGE_DICTATION);
   const dictationOn = Boolean(data[STORAGE_DICTATION]);
 
@@ -162,6 +174,24 @@ async function handleVoiceInput(rawText) {
   if (!dictationOn) {
     handleCommand(text, rawText);
   }
+}
+
+function matchesDictationOn(text) {
+  return (
+    text === "dictation on" ||
+    text === "start dictation" ||
+    text === "enable dictation" ||
+    text === "turn on dictation"
+  );
+}
+
+function matchesDictationOff(text) {
+  return (
+    text === "dictation off" ||
+    text === "stop dictation" ||
+    text === "disable dictation" ||
+    text === "turn off dictation"
+  );
 }
 
 async function tryDictation(rawText) {
@@ -410,10 +440,33 @@ function showLinkHints() {
   });
 
   document.body.appendChild(overlay);
-  window.__voiceNav = { overlay, links: linkData, visible: true };
+  function cleanup() {
+    if (window.__voiceNav?.overlay) {
+      window.__voiceNav.overlay.remove();
+    }
+    window.removeEventListener("scroll", onScroll, true);
+    window.removeEventListener("resize", onScroll, true);
+    window.__voiceNav = { overlay: null, links: [], visible: false };
+  }
+
+  let scrollTimeout = null;
+  function onScroll() {
+    if (scrollTimeout) {
+      clearTimeout(scrollTimeout);
+    }
+    scrollTimeout = setTimeout(cleanup, 120);
+  }
+
+  window.addEventListener("scroll", onScroll, true);
+  window.addEventListener("resize", onScroll, true);
+  window.__voiceNav = { overlay, links: linkData, visible: true, cleanup };
 }
 
 function hideLinkHints() {
+  if (window.__voiceNav?.cleanup) {
+    window.__voiceNav.cleanup();
+    return;
+  }
   if (window.__voiceNav?.overlay) {
     window.__voiceNav.overlay.remove();
   }
@@ -437,10 +490,12 @@ function clickLinkByIndex(index) {
   if (target) {
     target.focus();
     target.click();
-    if (window.__voiceNav?.overlay) {
+    if (window.__voiceNav?.cleanup) {
+      window.__voiceNav.cleanup();
+    } else if (window.__voiceNav?.overlay) {
       window.__voiceNav.overlay.remove();
+      window.__voiceNav = { overlay: null, links: [], visible: false };
     }
-    window.__voiceNav = { overlay: null, links: [], visible: false };
   }
 }
 

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Voice Command Navigator",
   "description": "Control tabs, scroll, and click links with voice commands.",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "action": {
     "default_title": "Voice Command Navigator",
     "default_popup": "popup.html"
